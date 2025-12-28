@@ -565,12 +565,16 @@ const errorModalOverlay = document.getElementById('errorModalOverlay');
 const errorModalButton = document.getElementById('errorModalButton');
 const warningModalOverlay = document.getElementById('warningModalOverlay');
 const warningModalButton = document.getElementById('warningModalButton');
+const searchButton = document.getElementById('searchButton');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     initializeEventListeners();
     updateSystemTime();
     setInterval(updateSystemTime, 1000);
+    
+    // Initialize search button state
+    updateSearchButtonState();
     
     // Check if we should show leaderboard directly (from map page)
     if (window.location.hash === '#leaderboard') {
@@ -605,6 +609,11 @@ function initializeEventListeners() {
     errorModalButton.addEventListener('click', hideErrorModal);
     warningModalButton.addEventListener('click', hideWarningModal);
     
+    // Search button click handler
+    if (searchButton) {
+        searchButton.addEventListener('click', handleSearchButtonClick);
+    }
+    
     // Add click handler to page header (only on index.html, not map.html)
     const pageHeader = document.getElementById('pageHeader');
     if (pageHeader && !document.body.classList.contains('map-page')) {
@@ -636,6 +645,25 @@ function handleKeyDown(e) {
 function handleInput(e) {
     const value = e.target.value.toUpperCase();
     e.target.value = value;
+    
+    // Update search button state
+    updateSearchButtonState();
+}
+
+function updateSearchButtonState() {
+    if (searchButton) {
+        const hasText = nameInput.value.trim().length > 0;
+        searchButton.disabled = !hasText;
+    }
+}
+
+function handleSearchButtonClick() {
+    if (searchButton && !searchButton.disabled) {
+        const name = nameInput.value.trim().toUpperCase();
+        if (name) {
+            handleSearch(name);
+        }
+    }
 }
 
 // Search Handler
@@ -1061,6 +1089,9 @@ function resetToLanding() {
     nameInput.focus();
     profileCardContainer.innerHTML = '';
     tableBody.innerHTML = '';
+    
+    // Update search button state
+    updateSearchButtonState();
     
     // Play beep
     playBeep(150, 0.1);

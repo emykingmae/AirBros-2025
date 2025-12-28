@@ -179,6 +179,44 @@ body.map-page .page-header,
     letter-spacing: 1px;
 }
 
+/* Mobile Search Button */
+.search-button-mobile {
+    display: none;
+    width: 100%;
+    max-width: 90vw;
+    margin-top: 20px;
+    font-size: 24px;
+    padding: 15px 30px;
+    text-align: center;
+}
+
+.search-button-mobile:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    border-color: #006600;
+    color: #006600;
+    box-shadow: 0 0 5px rgba(0, 102, 0, 0.2);
+}
+
+.search-button-mobile:disabled:hover {
+    background: transparent;
+    box-shadow: 0 0 5px rgba(0, 102, 0, 0.2);
+    border-color: #006600;
+    color: #006600;
+}
+
+.search-button-mobile:not(:disabled):hover {
+    background: rgba(0, 255, 0, 0.15);
+    box-shadow: 0 0 25px rgba(0, 255, 0, 0.7);
+    border-color: #33FF33;
+    color: #33FF33;
+}
+
+.search-button-mobile:not(:disabled):active {
+    transform: scale(0.98);
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+}
+
 .cursor-blink {
     position: absolute;
     right: 15px;
@@ -266,6 +304,19 @@ body.map-page .page-header,
 
 .header-section {
     margin-bottom: 30px;
+}
+
+.ascii-title {
+    text-align: center;
+}
+
+.ascii-title pre {
+    font-family: 'VT323', monospace;
+    color: #00FF00;
+    text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+    margin: 0;
+    white-space: pre;
+    overflow-x: auto;
 }
 
 .map-title-text {
@@ -404,6 +455,8 @@ body.map-page .page-header,
     border: 2px solid #00FF00;
     margin: 20px 0;
     box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+    width: 100%;
+    overflow-x: auto;
 }
 
 .table-header {
@@ -483,12 +536,14 @@ body.map-page .page-header,
     font-weight: bold;
     color: #00FF00;
     text-align: center;
+    min-width: 0;
 }
 
 .col-picture {
     display: flex;
     align-items: center;
     justify-content: center;
+    min-width: 0;
 }
 
 .profile-picture {
@@ -507,6 +562,8 @@ body.map-page .page-header,
     display: flex;
     align-items: center;
     padding-left: 10px;
+    min-width: 0;
+    overflow: hidden;
     text-transform: uppercase;
     letter-spacing: 1px;
     gap: 10px;
@@ -520,6 +577,7 @@ body.map-page .page-header,
     display: flex;
     align-items: center;
     justify-content: center;
+    min-width: 0;
 }
 
 /* Disqualification Badge */
@@ -620,6 +678,10 @@ body.map-page .page-header,
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
+    .container {
+        padding: 20px 10px;
+    }
+    
     .page-header {
         font-size: 20px;
         top: 10px;
@@ -632,11 +694,48 @@ body.map-page .page-header,
         font-size: 20px;
     }
     
+    .search-button-mobile {
+        display: block;
+    }
+    
+    .leaderboard-table {
+        overflow-x: visible;
+        width: 100%;
+    }
+    
     .table-header,
     .table-row {
-        grid-template-columns: 50px 80px 1fr 100px 80px 80px;
+        grid-template-columns: 40px 60px minmax(100px, 1fr) 80px 70px 70px;
         font-size: 14px;
         padding: 10px 5px;
+        min-width: 0;
+    }
+    
+    .col-rank {
+        font-size: 16px;
+    }
+    
+    .col-name {
+        font-size: 16px;
+        padding-left: 5px;
+        min-width: 0;
+        overflow: visible;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    .disqualification-badge {
+        margin-left: 0;
+        margin-top: 2px;
+        font-size: 12px;
+    }
+    
+    .col-miles,
+    .col-flights,
+    .col-time {
+        font-size: 14px;
+        text-align: center;
     }
     
     .profile-picture {
@@ -665,8 +764,26 @@ body.map-page .page-header,
     
     .system-time {
         font-size: 14px;
-        top: 10px;
-        right: 10px;
+        top: 50px;
+        left: 30px;
+        right: auto;
+    }
+    
+    /* Hide ASCII box on mobile and show just the text */
+    .ascii-title pre {
+        display: none;
+    }
+    
+    .ascii-title::before {
+        content: "FLIGHT STATISTICS LEADERBOARD 2025";
+        display: block;
+        font-family: 'VT323', monospace;
+        font-size: 24px;
+        color: #00FF00;
+        text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        text-align: left;
+        letter-spacing: 2px;
+        margin-bottom: 10px;
     }
 }
 
@@ -687,6 +804,12 @@ body.map-page .page-header,
     .table-header .col-flights,
     .table-header .col-time {
         display: none;
+    }
+    
+    .system-time {
+        font-size: 12px;
+        top: 45px;
+        left: 30px;
     }
 }
 
