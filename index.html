@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AirBros Wrapped 2025</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+    <div class="crt-screen">
+        <div class="scanlines"></div>
+        <div class="glow"></div>
+        
+        <div class="container" id="container">
+            <!-- Page Header -->
+            <div class="page-header" id="pageHeader">AirBros Wrapped 2025</div>
+            
+            <!-- Landing State -->
+            <div class="landing-state" id="landingState">
+                <div class="input-section">
+                    <label for="nameInput" class="terminal-label">SEARCH A NAME_</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="nameInput" class="terminal-input" autocomplete="off" spellcheck="false" placeholder="AirBro name or 'leaderboard'">
+                    </div>
+                </div>
+                
+                <div class="system-time" id="systemTime"></div>
+            </div>
+            
+            <!-- Loading State -->
+            <div class="loading-state" id="loadingState" style="display: none;">
+                <div class="loading-content">
+                    <div class="loading-message" id="loadingMessage">ACCESSING DATABASE...</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="loading-status" id="loadingStatus"></div>
+                </div>
+            </div>
+            
+            <!-- Leaderboard State -->
+            <div class="leaderboard-state" id="leaderboardState" style="display: none;">
+                <div class="header-section">
+                    <div class="ascii-title">
+                        <pre>╔═══════════════════════════════════════════════════════════╗
+║          FLIGHT STATISTICS LEADERBOARD 2025              ║
+╚═══════════════════════════════════════════════════════════╝</pre>
+                    </div>
+                    <div class="system-time" id="leaderboardTime"></div>
+                </div>
+                
+                <div class="profile-card-container" id="profileCardContainer"></div>
+                
+                <div class="leaderboard-table">
+                    <div class="table-header">
+                        <div class="col-rank">RANK</div>
+                        <div class="col-picture">PHOTO</div>
+                        <div class="col-name">NAME</div>
+                        <div class="col-miles">MILES</div>
+                        <div class="col-flights">FLIGHTS</div>
+                        <div class="col-time">TIME</div>
+                    </div>
+                    <div class="table-body" id="tableBody"></div>
+                </div>
+                
+                <div class="controls">
+                    <button class="terminal-button" id="resetButton">NEW SEARCH</button>
+                </div>
+            </div>
+            
+            <!-- Help/Easter Egg State -->
+            <div class="help-state" id="helpState" style="display: none;">
+                <div class="help-content">
+                    <pre>
+╔═══════════════════════════════════════════════════════════╗
+║                    SYSTEM COMMANDS                        ║
+╚═══════════════════════════════════════════════════════════╝
+
+AVAILABLE COMMANDS:
+  HELP          - Display this help message
+  CLEAR         - Clear screen and reset
+  TIME          - Display system time
+  VERSION       - Display system version
+  CREDITS       - Display credits
+
+KEYBOARD SHORTCUTS:
+  ENTER         - Submit search
+  ESC           - Reset to main screen
+  CTRL+C        - Clear input
+
+SYSTEM INFO:
+  Version: 1.0.0
+  Build Date: 2025-12-20
+  Terminal: VT100 Compatible
+
+                    </pre>
+                    <button class="terminal-button" onclick="hideHelp()">RETURN</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Error Modal -->
+        <div class="error-modal-overlay" id="errorModalOverlay" style="display: none;">
+            <div class="error-modal">
+                <div class="error-modal-content">
+                    <div class="error-icon">
+                        <pre>
+    
+✈  
+</pre>
+                    </div>
+                    <div class="error-title">ERROR</div>
+                    <div class="error-message">The person you searched for doesn't exist. Try again.</div>
+                    <button class="terminal-button" id="errorModalButton">OK</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Warning Modal -->
+        <div class="warning-modal-overlay" id="warningModalOverlay" style="display: none;">
+            <div class="warning-modal">
+                <div class="warning-modal-content">
+                    <div class="warning-icon">
+                        <pre>
+    
+⚠  
+</pre>
+                    </div>
+                    <div class="warning-title">DISQUALIFICATION NOTICE</div>
+                    <div class="warning-message">This person violated AirBro regulations on January 30, 2025 and February 2, 2025, and has therefore been disqualified from the 2025 year. We still love him though.</div>
+                    <button class="terminal-button warning-modal-button" id="warningModalButton">UNDERSTOOD</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
+

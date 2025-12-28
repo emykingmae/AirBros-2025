@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Routes Map - AirBros Wrapped 2025</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body class="map-page">
+    <div class="crt-screen">
+        <div class="scanlines"></div>
+        <div class="glow"></div>
+        
+        <div class="container map-container">
+            <!-- Page Header -->
+            <div class="page-header" id="pageHeader">AirBros Wrapped 2025</div>
+            
+            <!-- Map Header Section -->
+            <div class="map-header">
+                <div class="map-title-section">
+                    <div class="map-title-text" id="mapTitle">FLIGHT ROUTES - LOADING... - 2025</div>
+                </div>
+                <div class="map-controls-top">
+                    <button class="terminal-button" onclick="returnToLeaderboard()">← RETURN TO LEADERBOARD</button>
+                </div>
+                <div class="system-time" id="systemTime"></div>
+            </div>
+            
+            <!-- Loading State -->
+            <div class="map-loading-state" id="mapLoadingState">
+                <div class="loading-message" id="loadingMessage">LOADING FLIGHT DATA...</div>
+                <div class="loading-status" id="loadingStatus"></div>
+            </div>
+            
+            <!-- Map Section -->
+            <div class="map-section" id="mapSection" style="display: none;">
+                <!-- Map Container -->
+                <div id="map" class="flight-map"></div>
+                
+                
+                <!-- Total Miles Counter -->
+                <div class="map-miles-counter" id="milesCounter">
+                    TOTAL MILES: 0
+                </div>
+                
+                <!-- Routes Counter -->
+                <div class="map-routes-counter" id="mapSubheader">DISPLAYING 0 ROUTES</div>
+            </div>
+        </div>
+        
+        <!-- Flight Details Modal -->
+        <div class="flight-modal-overlay" id="flightModalOverlay" style="display: none;">
+            <div class="flight-modal" id="flightModal">
+                <div class="flight-modal-content">
+                    <div class="flight-modal-header">
+                        <div class="flight-modal-title">FLIGHT DETAILS</div>
+                    </div>
+                    <div class="flight-modal-body" id="flightModalBody">
+                        <!-- Flight details will be populated here -->
+                    </div>
+                    <div class="flight-modal-footer">
+                        <div class="flight-modal-hint">PRESS ESC TO CLOSE</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+    <script src="map.js"></script>
+</body>
+</html>
+
+
