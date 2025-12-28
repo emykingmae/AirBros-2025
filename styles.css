@@ -764,7 +764,7 @@ body.map-page .page-header,
     
     .system-time {
         font-size: 14px;
-        top: 50px;
+        top: 60px;
         left: 30px;
         right: auto;
     }
@@ -790,25 +790,28 @@ body.map-page .page-header,
 @media (max-width: 480px) {
     .table-header,
     .table-row {
-        grid-template-columns: 40px 60px 1fr;
+        grid-template-columns: 40px 60px 1fr 90px;
         font-size: 12px;
     }
     
-    .col-miles,
     .col-flights,
     .col-time {
         display: none;
     }
     
-    .table-header .col-miles,
     .table-header .col-flights,
     .table-header .col-time {
         display: none;
     }
     
+    .col-miles {
+        font-size: 12px;
+        text-align: center;
+    }
+    
     .system-time {
         font-size: 12px;
-        top: 45px;
+        top: 55px;
         left: 30px;
     }
 }
