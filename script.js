@@ -497,7 +497,7 @@ const flightData = [
         totalMiles: 862,
         flights: 2,
         flightTime: 3,
-        quote: "Frequent flyer, rare stayer."
+        quote: "Heading to the south for 3 weeks while they finish our apartment"
     },
     {
         id: 8,

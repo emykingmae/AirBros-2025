@@ -299,7 +299,7 @@ body.map-page .page-header,
 /* Leaderboard State */
 .leaderboard-state {
     animation: fade-in 0.5s ease-in;
-    padding-top: 100px;
+    padding-top: 85px;
 }
 
 .header-section {
@@ -684,9 +684,14 @@ body.map-page .page-header,
     
     .page-header {
         font-size: 20px;
-        top: 10px;
-        left: 10px;
+        top: 0;
+        left: 0;
+        width: 100%;
         letter-spacing: 2px;
+        background: #000000;
+        border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+        box-shadow: 0 2px 10px rgba(0, 255, 0, 0.2);
+        padding: 15px 20px 50px 20px;
     }
     
     .terminal-input {
@@ -717,11 +722,11 @@ body.map-page .page-header,
     
     .col-name {
         font-size: 16px;
-        padding-left: 5px;
+        padding-left: 0;
         min-width: 0;
         overflow: visible;
         flex-direction: column;
-        align-items: flex-start;
+        align-items: center;
         gap: 4px;
     }
     
@@ -764,9 +769,11 @@ body.map-page .page-header,
     
     .system-time {
         font-size: 14px;
-        top: 60px;
-        left: 30px;
+        top: 45px;
+        left: 20px;
         right: auto;
+        padding: 0;
+        z-index: 102;
     }
     
     /* Hide ASCII box on mobile and show just the text */
@@ -811,8 +818,10 @@ body.map-page .page-header,
     
     .system-time {
         font-size: 12px;
-        top: 55px;
-        left: 30px;
+        top: 45px;
+        left: 20px;
+        padding: 0;
+        z-index: 102;
     }
 }
 
