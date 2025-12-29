@@ -725,8 +725,39 @@ function fitMapToRoutes() {
             const isMobile = window.innerWidth <= 768;
             
             if (isMobile) {
-                // On mobile: show the entire world view - zoom level 2 shows the full world
-                map.setView([20, 0], 2, { animate: false });
+                // On mobile: zoom to the most recent flight path
+                if (currentPersonRoutes.length > 0) {
+                    // Sort routes by date (most recent first)
+                    const sortedRoutes = [...currentPersonRoutes].sort((a, b) => {
+                        const dateA = new Date(a.date);
+                        const dateB = new Date(b.date);
+                        return dateB - dateA; // Sort descending (newest first)
+                    });
+                    
+                    // Get the most recent route
+                    const mostRecentRoute = sortedRoutes[0];
+                    
+                    // Create bounds for the most recent flight path
+                    const bounds = L.latLngBounds([
+                        [mostRecentRoute.from.lat, mostRecentRoute.from.lon],
+                        [mostRecentRoute.to.lat, mostRecentRoute.to.lon]
+                    ]);
+                    
+                    // Fit map to the most recent flight path with padding
+                    if (bounds.isValid()) {
+                        map.fitBounds(bounds, {
+                            padding: [50, 50],
+                            maxZoom: 10,
+                            animate: false
+                        });
+                    } else {
+                        // Fallback to global view
+                        map.setView([20, 0], 2, { animate: false });
+                    }
+                } else {
+                    // Fallback to global view if no routes
+                    map.setView([20, 0], 2, { animate: false });
+                }
                 
                 // Enable interactions on mobile so users can navigate
                 map.dragging.enable();
