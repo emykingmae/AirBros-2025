@@ -299,11 +299,11 @@ body.map-page .page-header,
 /* Leaderboard State */
 .leaderboard-state {
     animation: fade-in 0.5s ease-in;
-    padding-top: 85px;
+    padding-top: 50px;
 }
 
 .header-section {
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
 .ascii-title {
@@ -354,12 +354,15 @@ body.map-page .page-header,
     align-items: center;
     gap: 20px;
     margin-bottom: 20px;
-    border-bottom: 1px solid #00FF00;
     padding-bottom: 15px;
 }
 
 .profile-header-info {
     flex: 1;
+}
+
+.profile-rank {
+    font-size: 26px;
 }
 
 .profile-picture-large {
@@ -373,7 +376,7 @@ body.map-page .page-header,
 }
 
 .profile-name-large {
-    font-size: 32px;
+    font-size: 42px;
     color: #33FF33;
     text-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
     letter-spacing: 3px;
@@ -391,8 +394,15 @@ body.map-page .page-header,
     margin-top: 10px;
 }
 
+/* Quote section when it's a direct child of profile-card (outside header) */
+.profile-card > .profile-quote-section {
+    margin-top: 0;
+    margin-bottom: 20px;
+    padding-top: 20px;
+}
+
 .profile-quote {
-    font-size: 20px;
+    font-size: 26px;
     color: #00FF00;
     text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
     font-style: italic;
@@ -537,6 +547,9 @@ body.map-page .page-header,
     color: #00FF00;
     text-align: center;
     min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .col-picture {
@@ -653,6 +666,11 @@ body.map-page .page-header,
 .controls {
     text-align: center;
     margin: 30px 0;
+    width: 100%;
+}
+
+.controls .terminal-button {
+    width: 100%;
 }
 
 /* Help State */
@@ -678,8 +696,12 @@ body.map-page .page-header,
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
+    .crt-screen {
+        padding: 20px 16px;
+    }
+    
     .container {
-        padding: 20px 10px;
+        padding: 0;
     }
     
     .page-header {
@@ -703,6 +725,10 @@ body.map-page .page-header,
         display: block;
     }
     
+    .leaderboard-state {
+        padding-top: 85px;
+    }
+    
     .leaderboard-table {
         overflow-x: visible;
         width: 100%;
@@ -720,6 +746,7 @@ body.map-page .page-header,
         font-size: 16px;
         display: flex;
         align-items: center;
+        padding-left: 10px;
     }
     
     .col-picture {
@@ -738,9 +765,21 @@ body.map-page .page-header,
         gap: 10px;
     }
     
+    /* For Piotr's row (disqualified), stack name and badge vertically on mobile */
+    .table-row.disqualified .col-name {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
     .disqualification-badge {
         margin-left: 0;
         font-size: 12px;
+    }
+    
+    .table-row.disqualified .disqualification-badge {
+        margin-left: 0;
+        margin-top: 0;
     }
     
     .col-miles,
@@ -765,13 +804,41 @@ body.map-page .page-header,
         flex-direction: column;
     }
     
-    .profile-quote-section {
+    /* On mobile: photo + name/rank horizontally aligned, quote + button below */
+    .profile-card-header {
+        flex-direction: row;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+    }
+    
+    .profile-header-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .profile-name-large {
+        margin-bottom: 5px;
+    }
+    
+    .profile-rank {
+        margin-top: 5px;
+        margin-bottom: 0;
+    }
+    
+    /* Quote section below the header on mobile */
+    .profile-card > .profile-quote-section {
+        display: flex;
         flex-direction: column;
         gap: 15px;
+        margin-top: 0;
+        margin-bottom: 20px;
+        padding-top: 15px;
     }
     
     .profile-map-button {
-        align-self: flex-start;
+        width: 100%;
         font-size: 20px;
         padding: 12px 24px;
     }
@@ -823,6 +890,7 @@ body.map-page .page-header,
     .col-rank {
         display: flex;
         align-items: center;
+        padding-left: 10px;
     }
     
     .col-picture {
@@ -838,11 +906,23 @@ body.map-page .page-header,
         font-size: 18px;
     }
     
+    /* For Piotr's row (disqualified), stack name and badge vertically on mobile */
+    .table-row.disqualified .col-name {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
     .col-miles {
         font-size: 16px;
         display: flex;
         align-items: center;
         justify-content: center;
+    }
+    
+    .table-row.disqualified .disqualification-badge {
+        margin-left: 0;
+        margin-top: 0;
     }
     
     .system-time {
@@ -1099,6 +1179,76 @@ body.map-page .page-header,
 .map-section {
     animation: fade-in 0.5s ease-in;
     position: relative;
+}
+
+/* Emissions Grade Section */
+.emissions-grade-section {
+    animation: fade-in 0.5s ease-in;
+    margin: 30px 0;
+}
+
+.emissions-grade-box {
+    border: 2px solid #00FF00;
+    padding: 30px;
+    background: rgba(0, 255, 0, 0.05);
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+    text-align: center;
+}
+
+.emissions-grade-title {
+    font-size: 24px;
+    color: #33FF33;
+    text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+}
+
+.emissions-grade-value {
+    font-size: 72px;
+    font-weight: bold;
+    color: #00FF00;
+    text-shadow: 0 0 20px rgba(0, 255, 0, 0.8);
+    letter-spacing: 5px;
+    margin: 20px 0;
+    animation: grade-glow 2s ease-in-out infinite;
+}
+
+@keyframes grade-glow {
+    0%, 100% {
+        text-shadow: 0 0 20px rgba(0, 255, 0, 0.8);
+    }
+    50% {
+        text-shadow: 0 0 30px rgba(0, 255, 0, 1);
+    }
+}
+
+.emissions-grade-value.grade-a {
+    color: #00FF00;
+}
+
+.emissions-grade-value.grade-b {
+    color: #33FF33;
+}
+
+.emissions-grade-value.grade-c {
+    color: #99FF99;
+}
+
+.emissions-grade-value.grade-d {
+    color: #FFFF00;
+}
+
+.emissions-grade-value.grade-f {
+    color: #FF6666;
+}
+
+.emissions-grade-details {
+    font-size: 18px;
+    color: #33FF33;
+    text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+    letter-spacing: 1px;
+    margin-top: 15px;
+    line-height: 1.6;
 }
 
 .flight-map {
@@ -1603,6 +1753,22 @@ button:not(.profile-map-button),
         padding: 0 12px;
     }
     
+    .emissions-grade-box {
+        padding: 20px;
+    }
+    
+    .emissions-grade-title {
+        font-size: 20px;
+    }
+    
+    .emissions-grade-value {
+        font-size: 56px;
+    }
+    
+    .emissions-grade-details {
+        font-size: 16px;
+    }
+    
     .flight-modal {
         width: 100vw;
         max-width: 100vw;
@@ -1631,6 +1797,22 @@ button:not(.profile-map-button),
 @media (max-width: 480px) {
     .flight-map {
         height: 300px;
+    }
+    
+    .emissions-grade-box {
+        padding: 15px;
+    }
+    
+    .emissions-grade-title {
+        font-size: 18px;
+    }
+    
+    .emissions-grade-value {
+        font-size: 48px;
+    }
+    
+    .emissions-grade-details {
+        font-size: 14px;
     }
     
     .map-subheader {

@@ -452,7 +452,7 @@ const flightData = [
         totalMiles: 15770,
         flights: 12,
         flightTime: 40,
-        quote: "Collecting miles, one flight at a time."
+        quote: "Vacation mode activated"
     },
     {
         id: 3,
@@ -488,12 +488,12 @@ const flightData = [
         totalMiles: 862,
         flights: 2,
         flightTime: 3,
-        quote: "Adventure awaits at every destination."
+        quote: "I love elephants"
     },
     {
         id: 7,
         name: "Maggie",
-        image: "https://i.pravatar.cc/150?img=33",
+        image: "images/maggie.png",
         totalMiles: 862,
         flights: 2,
         flightTime: 3,
@@ -515,25 +515,25 @@ const flightData = [
         totalMiles: 2840,
         flights: 4,
         flightTime: 10,
-        quote: "Jet set, never forget."
+        quote: "Do you think Kiefer Sutherland combs through the movies and tv shows in the plane entertainment to see if any of his stuff is there"
     },
     {
         id: 10,
         name: "Dan",
-        image: "https://i.pravatar.cc/150?img=70",
+        image: "images/dan.png",
         totalMiles: 6340,
         flights: 2,
         flightTime: 14,
-        quote: "Flying high, staying grounded."
+        quote: "Got a fancy controller for my drone with a simulator on it so I can practice before I get in the air."
     },
     {
         id: 11,
         name: "Ana",
-        image: "https://i.pravatar.cc/150?img=25",
+        image: "images/ana.png",
         totalMiles: 14970,
         flights: 4,
         flightTime: 32,
-        quote: "Exploring the world, one flight at a time."
+        quote: "question - if i'd like to participate in airbros, how does that work?"
     },
     {
         id: 12,
@@ -928,8 +928,11 @@ function createTableRow(person, rank) {
     
     const disqualificationBadge = isPiotr ? '<span class="disqualification-badge">⚠ DISQUALIFIED</span>' : '';
     
+    // Show warning icon instead of rank number for Piotr
+    const rankDisplay = isPiotr ? '⚠' : rank;
+    
     row.innerHTML = `
-        <div class="col-rank">${rank}</div>
+        <div class="col-rank">${rankDisplay}</div>
         <div class="col-picture">
             <img src="${person.image}" alt="${person.name}" class="profile-picture" onerror="this.src='https://via.placeholder.com/60?text=?'">
         </div>
@@ -953,14 +956,14 @@ function renderProfileCard(person) {
                 <img src="${person.image}" alt="${person.name}" class="profile-picture-large" onerror="this.src='https://via.placeholder.com/120?text=?'">
                 <div class="profile-header-info">
                     <div class="profile-name-large">${person.name.toUpperCase()} ${disqualificationBadge}</div>
-                    <div class="profile-rank" style="font-size: 18px; ${isPiotr ? 'color: #33AA33; opacity: 0.6;' : 'color: #33FF33;'} margin-top: 5px;">
+                    <div class="profile-rank" style="${isPiotr ? 'color: #33AA33; opacity: 0.6;' : 'color: #33FF33;'} margin-top: 5px;">
                         RANK #${getRank(person.id)}
                     </div>
-                    <div class="profile-quote-section">
-                        ${person.quote ? `<div class="profile-quote">"${person.quote}"</div>` : '<div></div>'}
-                        <button class="terminal-button profile-map-button" onclick="handleMapButtonClick('${person.name}', ${person.id})">VIEW FLIGHT MAP</button>
-                    </div>
                 </div>
+            </div>
+            <div class="profile-quote-section">
+                ${person.quote ? `<div class="profile-quote">"${person.quote}"</div>` : '<div></div>'}
+                <button class="terminal-button profile-map-button" onclick="handleMapButtonClick('${person.name}', ${person.id})">VIEW FLIGHT MAP</button>
             </div>
             <div class="profile-stats">
                 <div class="stat-item">

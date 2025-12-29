@@ -62,8 +62,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', () => {
         if (map) {
             map.invalidateSize();
-            // Keep at zoom level 2 (global view) when resizing
-            map.setView([20, 0], 2, { animate: false });
+            // Re-fit map to routes when resizing (will handle mobile vs desktop appropriately)
+            fitMapToRoutes();
         }
     });
     
@@ -223,6 +223,8 @@ function startLoadingSequence() {
             // Start drawing routes
             setTimeout(() => {
                 drawAllRoutes();
+                // Calculate and display emissions grade
+                calculateAndDisplayEmissionsGrade();
             }, 500);
         }
     };
@@ -719,13 +721,14 @@ function fitMapToRoutes() {
             // Ensure map size is recalculated
             map.invalidateSize();
             
-            // Just show the entire world view - zoom level 2 shows the full world
-            map.setView([20, 0], 2, { animate: false });
-            
-            // Enable interactions on mobile, disable on desktop
+            // Detect mobile device
             const isMobile = window.innerWidth <= 768;
+            
             if (isMobile) {
-                // On mobile: enable dragging and touch zoom so users can navigate
+                // On mobile: show the entire world view - zoom level 2 shows the full world
+                map.setView([20, 0], 2, { animate: false });
+                
+                // Enable interactions on mobile so users can navigate
                 map.dragging.enable();
                 map.touchZoom.enable();
                 // Enable tap for mobile interactions
@@ -733,6 +736,27 @@ function fitMapToRoutes() {
                     map.tap.enable();
                 }
             } else {
+                // On desktop: zoom to the area where flight paths occur
+                const bounds = L.latLngBounds([]);
+                
+                // Collect all airport coordinates from routes
+                currentPersonRoutes.forEach(route => {
+                    bounds.extend([route.from.lat, route.from.lon]);
+                    bounds.extend([route.to.lat, route.to.lon]);
+                });
+                
+                // Fit map to bounds with padding, and set a max zoom level to prevent over-zooming
+                if (bounds.isValid()) {
+                    map.fitBounds(bounds, {
+                        padding: [50, 50], // Add padding around the bounds
+                        maxZoom: 10, // Prevent zooming in too close
+                        animate: false
+                    });
+                } else {
+                    // Fallback to global view if bounds are invalid
+                    map.setView([20, 0], 2, { animate: false });
+                }
+                
                 // On desktop: disable all interactions
                 map.dragging.disable();
                 map.touchZoom.disable();
@@ -775,6 +799,73 @@ function updateMilesCounter(routeCount) {
             totalMiles += currentPersonRoutes[i].miles;
         }
         milesCounter.textContent = `TOTAL MILES: ${totalMiles.toLocaleString()}`;
+    }
+}
+
+// Calculate and Display Emissions Grade
+function calculateAndDisplayEmissionsGrade() {
+    if (!currentPersonRoutes || currentPersonRoutes.length === 0) {
+        return;
+    }
+    
+    // Calculate total miles and number of flights
+    let totalMiles = 0;
+    const numFlights = currentPersonRoutes.length;
+    
+    currentPersonRoutes.forEach(route => {
+        totalMiles += route.miles;
+    });
+    
+    // Calculate average miles per flight
+    const avgMilesPerFlight = totalMiles / numFlights;
+    
+    // Determine grade based on average miles per flight
+    // Higher average = fewer takeoffs/landings per mile = better emissions grade
+    let grade = 'F';
+    let gradeClass = 'grade-f';
+    let gradeExplanation = 'Many short flights - higher emissions per mile';
+    
+    if (avgMilesPerFlight >= 2000) {
+        grade = 'A';
+        gradeClass = 'grade-a';
+        gradeExplanation = 'Long-haul flights - lower emissions per mile';
+    } else if (avgMilesPerFlight >= 1000) {
+        grade = 'B';
+        gradeClass = 'grade-b';
+        gradeExplanation = 'Medium to long flights - moderate emissions';
+    } else if (avgMilesPerFlight >= 500) {
+        grade = 'C';
+        gradeClass = 'grade-c';
+        gradeExplanation = 'Mixed flight distances - average emissions';
+    } else if (avgMilesPerFlight >= 250) {
+        grade = 'D';
+        gradeClass = 'grade-d';
+        gradeExplanation = 'Many medium flights - higher emissions per mile';
+    } else {
+        grade = 'F';
+        gradeClass = 'grade-f';
+        gradeExplanation = 'Many short flights - higher emissions per mile';
+    }
+    
+    // Display the grade
+    const emissionsSection = document.getElementById('emissionsGradeSection');
+    const gradeValue = document.getElementById('emissionsGrade');
+    const gradeDetails = document.getElementById('emissionsGradeDetails');
+    
+    if (emissionsSection && gradeValue && gradeDetails) {
+        // Set the grade value and class
+        gradeValue.textContent = grade;
+        gradeValue.className = `emissions-grade-value ${gradeClass}`;
+        
+        // Set the details
+        gradeDetails.innerHTML = `
+            <div>${numFlights} FLIGHTS • ${totalMiles.toLocaleString()} TOTAL MILES</div>
+            <div>AVG ${avgMilesPerFlight.toLocaleString(undefined, {maximumFractionDigits: 0})} MILES PER FLIGHT</div>
+            <div style="margin-top: 10px; font-size: 16px; color: #99FF99;">${gradeExplanation}</div>
+        `;
+        
+        // Show the section
+        emissionsSection.style.display = 'block';
     }
 }
 
