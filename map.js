@@ -58,13 +58,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    // Handle window resize to ensure map adjusts to container size
+    window.addEventListener('resize', () => {
+        if (map) {
+            map.invalidateSize();
+            // Keep at zoom level 2 (global view) when resizing
+            map.setView([20, 0], 2, { animate: false });
+        }
+    });
+    
     // Start loading sequence
     startLoadingSequence();
 });
 
 // Initialize Leaflet Map
 function initializeMap() {
-    // Create map with dark styling - set initial view (no user interactions)
+    // Detect mobile device
+    const isMobile = window.innerWidth <= 768;
+    
+    // Create map with dark styling - enable interactions on mobile, disable on desktop
+    // Set maxBounds to prevent duplicate world copies and ensure flight paths don't end at edges
     map = L.map('map', {
         center: [20, 0],
         zoom: 2,
@@ -74,13 +87,14 @@ function initializeMap() {
         minZoom: 2,
         maxZoom: 5,
         worldCopyJump: false,
-        dragging: false, // Disable dragging/panning
-        touchZoom: false, // Disable touch zoom
+        maxBounds: [[-90, -180], [90, 180]], // Limit to single world copy, full world bounds
+        dragging: isMobile, // Enable dragging on mobile for navigation
+        touchZoom: isMobile, // Enable touch zoom on mobile
         doubleClickZoom: false, // Disable double-click zoom
         scrollWheelZoom: false, // Disable scroll wheel zoom
         boxZoom: false, // Disable box zoom
         keyboard: false, // Disable keyboard navigation
-        tap: false // Disable tap on mobile
+        tap: isMobile // Enable tap on mobile
     });
     
     // Explicitly hide attribution if it appears
@@ -94,7 +108,7 @@ function initializeMap() {
         subdomains: 'abcd',
         maxZoom: 5,
         tileSize: 256,
-        noWrap: false
+        noWrap: false // Allow wrapping for routes that cross date line, but maxBounds prevents duplicates
     });
     
     darkTiles.addTo(map);
@@ -105,16 +119,29 @@ function initializeMap() {
         mapContainer.style.backgroundColor = '#000000';
     }
     
-    // Disable all map interactions (zoom, pan, etc.)
-    map.dragging.disable();
-    map.touchZoom.disable();
+    // Enable interactions on mobile, disable on desktop (isMobile already declared above)
+    if (isMobile) {
+        // On mobile: enable dragging and touch zoom so users can navigate
+        map.dragging.enable();
+        map.touchZoom.enable();
+        // Enable tap for mobile interactions
+        if (map.tap) {
+            map.tap.enable();
+        }
+    } else {
+        // On desktop: disable all interactions
+        map.dragging.disable();
+        map.touchZoom.disable();
+        if (map.tap) {
+            map.tap.disable();
+        }
+    }
+    
+    // Always disable these interactions
     map.doubleClickZoom.disable();
     map.scrollWheelZoom.disable();
     map.boxZoom.disable();
     map.keyboard.disable();
-    if (map.tap) {
-        map.tap.disable();
-    }
     
     // Map is now initialized, invalidate size to ensure proper rendering
     setTimeout(() => {
@@ -681,44 +708,54 @@ function addAirportMarker(airport) {
 function fitMapToRoutes() {
     if (!map || currentPersonRoutes.length === 0) return;
     
-    const bounds = [];
-    currentPersonRoutes.forEach(route => {
-        bounds.push([route.from.lat, route.from.lon]);
-        bounds.push([route.to.lat, route.to.lon]);
-    });
-    
-    if (bounds.length > 0) {
-        try {
-            // Ensure map is properly sized
+    try {
+        // Force map to recalculate its container size
+        map.invalidateSize();
+        
+        // Use a small delay to ensure the container is properly sized
+        setTimeout(() => {
+            if (!map) return;
+            
+            // Ensure map size is recalculated
             map.invalidateSize();
             
-            // Create a LatLngBounds object
-            const latLngBounds = L.latLngBounds(bounds);
+            // Just show the entire world view - zoom level 2 shows the full world
+            map.setView([20, 0], 2, { animate: false });
             
-            // Fit bounds to show all routes (no animation, no user interaction allowed)
-            map.fitBounds(latLngBounds, {
-                padding: [80, 80],
-                maxZoom: 4,
-                animate: false  // Disable animation for initial fit
-            });
+            // Enable interactions on mobile, disable on desktop
+            const isMobile = window.innerWidth <= 768;
+            if (isMobile) {
+                // On mobile: enable dragging and touch zoom so users can navigate
+                map.dragging.enable();
+                map.touchZoom.enable();
+                // Enable tap for mobile interactions
+                if (map.tap) {
+                    map.tap.enable();
+                }
+            } else {
+                // On desktop: disable all interactions
+                map.dragging.disable();
+                map.touchZoom.disable();
+                if (map.tap) {
+                    map.tap.disable();
+                }
+            }
             
-            // Ensure map stays fixed (disable all interactions again after fitBounds)
-            map.dragging.disable();
-            map.touchZoom.disable();
+            // Always disable these interactions
             map.doubleClickZoom.disable();
             map.scrollWheelZoom.disable();
             map.boxZoom.disable();
             map.keyboard.disable();
-            if (map.tap) {
-                map.tap.disable();
-            }
-        } catch (e) {
-            console.error('Error fitting bounds:', e);
-            // Fallback to center view
-            if (bounds.length > 0) {
-                const avgLat = bounds.reduce((sum, b) => sum + b[0], 0) / bounds.length;
-                const avgLon = bounds.reduce((sum, b) => sum + b[1], 0) / bounds.length;
-                map.setView([avgLat, avgLon], 2);
+        }, 100);
+    } catch (e) {
+        console.error('Error setting map view:', e);
+        // Fallback to default global view
+        if (map) {
+            const isMobileFallback = window.innerWidth <= 768;
+            map.setView([20, 0], 2, { animate: false });
+            if (isMobileFallback) {
+                map.dragging.enable();
+                map.touchZoom.enable();
             }
         }
     }
