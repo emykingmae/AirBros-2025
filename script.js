@@ -470,7 +470,7 @@ const flightData = [
         totalMiles: 20424,
         flights: 14,
         flightTime: 55,
-        quote: "Living life at 30,000 feet."
+        quote: "It's a mullet trip. Biz in the front end, pleasure in the back."
     },
     {
         id: 5,

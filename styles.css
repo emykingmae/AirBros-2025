@@ -718,29 +718,38 @@ body.map-page .page-header,
     
     .col-rank {
         font-size: 16px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .col-picture {
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .col-name {
-        font-size: 16px;
+        font-size: 20px;
         padding-left: 0;
         min-width: 0;
         overflow: visible;
-        flex-direction: column;
+        display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 10px;
     }
     
     .disqualification-badge {
         margin-left: 0;
-        margin-top: 2px;
         font-size: 12px;
     }
     
     .col-miles,
     .col-flights,
     .col-time {
-        font-size: 14px;
-        text-align: center;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .profile-picture {
@@ -811,9 +820,29 @@ body.map-page .page-header,
         display: none;
     }
     
+    .col-rank {
+        display: flex;
+        align-items: center;
+    }
+    
+    .col-picture {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .col-name {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 18px;
+    }
+    
     .col-miles {
-        font-size: 12px;
-        text-align: center;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .system-time {
