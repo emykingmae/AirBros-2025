@@ -296,7 +296,7 @@ const flightRoutes = {
             date: "2025-11-06", miles: 3170, duration: "7h 00m"
         }
     ],
-    "Ana": [
+    "Anna": [
         {
             id: 1,
             from: { code: "NYC", name: "New York City (JFK)", lat: 40.6413, lon: -73.7781 },
@@ -528,7 +528,7 @@ const flightData = [
     },
     {
         id: 11,
-        name: "Ana",
+        name: "Anna",
         image: "images/ana.png",
         totalMiles: 14970,
         flights: 4,
@@ -679,7 +679,8 @@ function handleSearch(searchName, skipLoading = false) {
         'CHRIS': 'CJ',
         'PH': 'Commish',
         'STEPHEN': 'Commish',
-        'STEPHEN PINTO': 'Commish'
+        'STEPHEN PINTO': 'Commish',
+        'ANA': 'ANNA'
     };
     
     // Normalize search name (use alias if exists, otherwise use original)
