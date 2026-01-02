@@ -1353,63 +1353,146 @@ function drawOmniMapRoute(route, personName) {
     const toLat = route.to.lat;
     const toLon = route.to.lon;
     
-    // Create curved path using arc (reuse logic from map.js)
-    const arcSegments = createOmniMapArc(fromLat, fromLon, toLat, toLon);
+    // Create curved path using arc - get continuous points
+    const allPoints = createOmniMapArcContinuous(fromLat, fromLon, toLat, toLon);
     
-    arcSegments.forEach((segmentPoints) => {
-        const polyline = L.polyline([], {
-            color: '#00FF00',
-            weight: 2,
-            opacity: 0.7,
-            interactive: false,
-            className: 'omni-flight-route-line'
-        });
+    // Check if route crosses or is near date line
+    const minLon = Math.min(...allPoints.map(p => p[1]));
+    const maxLon = Math.max(...allPoints.map(p => p[1]));
+    const lonSpan = maxLon - minLon;
+    const crossesDateLine = lonSpan > 180 || 
+                            (minLon < -100 && maxLon > 100) ||
+                            (minLon < -170 && maxLon > 170);
+    const nearDateLine = minLon < -150 || maxLon > 150;
+    
+    // Create primary route with smart normalization that maintains continuity
+    const primaryPoints = [];
+    let lastLon = null;
+    
+    for (let i = 0; i < allPoints.length; i++) {
+        const [lat, lon] = allPoints[i];
+        let normalizedLon = lon;
         
-        polyline.addTo(omniMap);
-        polyline.setLatLngs(segmentPoints);
+        // Normalize to -180 to 180 range
+        while (normalizedLon < -180) normalizedLon += 360;
+        while (normalizedLon > 180) normalizedLon -= 360;
         
-        // Store person name and route data
-        polyline.personName = personName;
-        polyline.route = route;
+        // Maintain continuity: if previous point exists and we detect a date line crossing,
+        // choose the normalization that keeps the path continuous
+        if (lastLon !== null) {
+            const directDiff = normalizedLon - lastLon;
+            const altLon1 = normalizedLon - 360;
+            const altLon2 = normalizedLon + 360;
+            
+            // Check which alternative is closer (maintains continuity)
+            const diff1 = Math.abs(altLon1 - lastLon);
+            const diff2 = Math.abs(altLon2 - lastLon);
+            const directDiffAbs = Math.abs(directDiff);
+            
+            // If direct path is too large (crossed date line), use alternative
+            if (directDiffAbs > 180) {
+                if (diff1 < diff2 && diff1 < directDiffAbs) {
+                    normalizedLon = altLon1;
+                } else if (diff2 < directDiffAbs) {
+                    normalizedLon = altLon2;
+                }
+            }
+        }
         
-        omniMapRouteLines.push(polyline);
+        lastLon = normalizedLon;
+        primaryPoints.push([lat, normalizedLon]);
+    }
+    
+    // Draw primary route
+    const primaryPolyline = L.polyline([], {
+        color: '#00FF00',
+        weight: 2,
+        opacity: 0.7,
+        interactive: false,
+        className: 'omni-flight-route-line'
     });
+    
+    primaryPolyline.addTo(omniMap);
+    primaryPolyline.setLatLngs(primaryPoints);
+    primaryPolyline.personName = personName;
+    primaryPolyline.route = route;
+    omniMapRouteLines.push(primaryPolyline);
+    
+    // Create duplicates for seamless wrapping - do this for all routes to ensure continuity
+    // Create left copy (-360 offset)
+    const leftCopyPoints = primaryPoints.map(([lat, lon]) => [lat, lon - 360]);
+    
+    const leftPolyline = L.polyline([], {
+        color: '#00FF00',
+        weight: 2,
+        opacity: 0.7,
+        interactive: false,
+        className: 'omni-flight-route-line'
+    });
+    
+    leftPolyline.addTo(omniMap);
+    leftPolyline.setLatLngs(leftCopyPoints);
+    leftPolyline.personName = personName;
+    leftPolyline.route = route;
+    omniMapRouteLines.push(leftPolyline);
+    
+    // Create right copy (+360 offset)
+    const rightCopyPoints = primaryPoints.map(([lat, lon]) => [lat, lon + 360]);
+    
+    const rightPolyline = L.polyline([], {
+        color: '#00FF00',
+        weight: 2,
+        opacity: 0.7,
+        interactive: false,
+        className: 'omni-flight-route-line'
+    });
+    
+    rightPolyline.addTo(omniMap);
+    rightPolyline.setLatLngs(rightCopyPoints);
+    rightPolyline.personName = personName;
+    rightPolyline.route = route;
+    omniMapRouteLines.push(rightPolyline);
 }
 
-function createOmniMapArc(lat1, lon1, lat2, lon2) {
+// Create continuous arc without splitting - returns single array of points
+function createOmniMapArcContinuous(lat1, lon1, lat2, lon2) {
     const points = [];
-    const steps = 50;
+    const steps = 100; // More steps for smoother curves
     
     // Calculate distance
     const distance = calculateOmniMapDistance(lat1, lon1, lat2, lon2);
     const arcHeightKm = distance * 0.1;
     const arcHeightDegrees = arcHeightKm / 111;
     
-    // Check if trans-Pacific
+    // Check if trans-Pacific (crosses date line)
     const isTransPacific = (
         (lon1 < -50 && lon2 > 100) || (lon1 > 100 && lon2 < -50)
     );
     
+    // For trans-Pacific routes, use adjusted longitudes to create continuous path
     let lon1Adjusted = lon1;
     let lon2Adjusted = lon2;
-    let usePacificRoute = false;
+    let useAdjusted = false;
     
     if (isTransPacific) {
-        usePacificRoute = true;
+        useAdjusted = true;
+        // Choose the shorter path (Pacific route)
         if (lon1 < 0 && lon2 > 0) {
+            // Going west: adjust destination to negative
             lon2Adjusted = lon2 - 360;
         } else if (lon1 > 0 && lon2 < 0) {
+            // Going east: adjust origin to negative
             lon1Adjusted = lon1 - 360;
         }
     }
     
     const midLat = (lat1 + lat2) / 2;
-    const midLon = usePacificRoute ? (lon1Adjusted + lon2Adjusted) / 2 : (lon1 + lon2) / 2;
-    const bearing = calculateOmniMapBearing(lat1, lon1Adjusted, lat2, lon2Adjusted);
+    const midLon = useAdjusted ? (lon1Adjusted + lon2Adjusted) / 2 : (lon1 + lon2) / 2;
+    const bearing = calculateOmniMapBearing(lat1, useAdjusted ? lon1Adjusted : lon1, lat2, useAdjusted ? lon2Adjusted : lon2);
     const bearingRad = bearing * Math.PI / 180;
     
     const latDiff = Math.abs(lat2 - lat1);
-    const lonDiff = Math.abs(lon2Adjusted - lon1Adjusted);
+    const lonDiff = useAdjusted ? Math.abs(lon2Adjusted - lon1Adjusted) : Math.abs(lon2 - lon1);
     const isPrimarilyEastWest = lonDiff > latDiff * 1.5;
     const isPrimarilyNorthSouth = latDiff > lonDiff * 1.5;
     
@@ -1440,7 +1523,7 @@ function createOmniMapArc(lat1, lon1, lat2, lon2) {
         let lat = lat1 + (lat2 - lat1) * t;
         let lon;
         
-        if (usePacificRoute) {
+        if (useAdjusted) {
             lon = lon1Adjusted + (lon2Adjusted - lon1Adjusted) * t;
         } else {
             lon = lon1 + (lon2 - lon1) * t;
@@ -1450,14 +1533,12 @@ function createOmniMapArc(lat1, lon1, lat2, lon2) {
         lat += offsetLat * curveFactor;
         lon += offsetLon * curveFactor;
         
-        while (lon < -180) lon += 360;
-        while (lon > 180) lon -= 360;
-        
+        // Don't normalize here - keep the continuous path
+        // Normalization will happen when drawing
         points.push([lat, lon]);
     }
     
-    // Split points at date line
-    return splitOmniMapPointsAtDateLine(points);
+    return points;
 }
 
 function splitOmniMapPointsAtDateLine(points) {
@@ -1469,14 +1550,29 @@ function splitOmniMapPointsAtDateLine(points) {
     for (let i = 1; i < points.length; i++) {
         const prevLon = points[i - 1][1];
         const currLon = points[i][1];
-        const lonDiff = Math.abs(currLon - prevLon);
-        const crossesDateLine = lonDiff > 180;
+        
+        // Calculate the shortest path longitude difference
+        let lonDiff = currLon - prevLon;
+        // Normalize to -180 to 180 range
+        while (lonDiff > 180) lonDiff -= 360;
+        while (lonDiff < -180) lonDiff += 360;
+        
+        const crossesDateLine = Math.abs(lonDiff) > 180 || 
+                                (prevLon < -170 && currLon > 170) ||
+                                (prevLon > 170 && currLon < -170);
         
         if (crossesDateLine) {
+            // Add endpoint of current segment at date line
             if (currentSegment.length > 0) {
+                // Add a point exactly at the date line boundary for clean split
+                const lastPoint = currentSegment[currentSegment.length - 1];
+                const dateLinePoint = [lastPoint[0], prevLon < 0 ? -180 : 180];
+                currentSegment.push(dateLinePoint);
                 segments.push(currentSegment);
             }
-            currentSegment = [points[i]];
+            // Start new segment from date line
+            const dateLineStart = [points[i][0], currLon < 0 ? -180 : 180];
+            currentSegment = [dateLineStart, points[i]];
         } else {
             currentSegment.push(points[i]);
         }
@@ -1516,7 +1612,13 @@ function calculateOmniMapDistance(lat1, lon1, lat2, lon2) {
 function addOmniMapAirportMarker(airport) {
     if (!omniMap) return;
     
-    const marker = L.circleMarker([airport.lat, airport.lon], {
+    // Normalize longitude to -180 to 180
+    let normalizedLon = airport.lon;
+    while (normalizedLon < -180) normalizedLon += 360;
+    while (normalizedLon > 180) normalizedLon -= 360;
+    
+    // Add primary marker
+    const marker = L.circleMarker([airport.lat, normalizedLon], {
         radius: 4,
         fillColor: '#00FF00',
         color: '#00FF00',
@@ -1526,7 +1628,7 @@ function addOmniMapAirportMarker(airport) {
         interactive: false
     }).addTo(omniMap);
     
-    const label = L.marker([airport.lat + 0.3, airport.lon + 0.3], {
+    const label = L.marker([airport.lat + 0.3, normalizedLon + 0.3], {
         icon: L.divIcon({
             className: 'airport-label',
             html: `<div class="airport-code-label" style="color: #00FF00; font-size: 12px; text-shadow: 0 0 5px rgba(0, 255, 0, 0.8);">${airport.code}</div>`,
@@ -1543,6 +1645,67 @@ function addOmniMapAirportMarker(airport) {
     label.markerElement = marker;
     
     omniMapAirportMarkers.push(marker, label);
+    
+    // If airport is near date line, duplicate it for seamless wrapping
+    if (normalizedLon < -170 || normalizedLon > 170) {
+        // Add left copy (negative longitude extended)
+        const leftMarker = L.circleMarker([airport.lat, normalizedLon - 360], {
+            radius: 4,
+            fillColor: '#00FF00',
+            color: '#00FF00',
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.6,
+            interactive: false
+        }).addTo(omniMap);
+        
+        const leftLabel = L.marker([airport.lat + 0.3, normalizedLon - 360 + 0.3], {
+            icon: L.divIcon({
+                className: 'airport-label',
+                html: `<div class="airport-code-label" style="color: #00FF00; font-size: 12px; text-shadow: 0 0 5px rgba(0, 255, 0, 0.8);">${airport.code}</div>`,
+                iconSize: [40, 15],
+                iconAnchor: [20, 7]
+            }),
+            interactive: false,
+            zIndexOffset: 1000
+        }).addTo(omniMap);
+        
+        leftMarker.airportCode = airport.code;
+        leftLabel.airportCode = airport.code;
+        leftMarker.labelElement = leftLabel;
+        leftLabel.markerElement = leftMarker;
+        
+        omniMapAirportMarkers.push(leftMarker, leftLabel);
+        
+        // Add right copy (positive longitude extended)
+        const rightMarker = L.circleMarker([airport.lat, normalizedLon + 360], {
+            radius: 4,
+            fillColor: '#00FF00',
+            color: '#00FF00',
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.6,
+            interactive: false
+        }).addTo(omniMap);
+        
+        const rightLabel = L.marker([airport.lat + 0.3, normalizedLon + 360 + 0.3], {
+            icon: L.divIcon({
+                className: 'airport-label',
+                html: `<div class="airport-code-label" style="color: #00FF00; font-size: 12px; text-shadow: 0 0 5px rgba(0, 255, 0, 0.8);">${airport.code}</div>`,
+                iconSize: [40, 15],
+                iconAnchor: [20, 7]
+            }),
+            interactive: false,
+            zIndexOffset: 1000
+        }).addTo(omniMap);
+        
+        rightMarker.airportCode = airport.code;
+        rightLabel.airportCode = airport.code;
+        rightMarker.labelElement = rightLabel;
+        rightLabel.markerElement = rightMarker;
+        
+        omniMapAirportMarkers.push(rightMarker, rightLabel);
+    }
 }
 
 // Removed fitOmniMapToRoutes - map now shows world view by default and is scrollable
@@ -1553,6 +1716,7 @@ function highlightPersonOnOmniMap(personName) {
     currentlyHoveredPerson = personName;
     
     // Highlight this person's routes, dim others
+    // Note: This will update all copies (primary, left, right) since they share the same personName
     omniMapRouteLines.forEach(line => {
         if (line.personName === personName) {
             line.setStyle({
@@ -1628,7 +1792,7 @@ function resetOmniMapHighlight() {
     
     currentlyHoveredPerson = null;
     
-    // Reset all routes
+    // Reset all routes (including all world copies)
     omniMapRouteLines.forEach(line => {
         line.setStyle({
             color: '#00FF00',
