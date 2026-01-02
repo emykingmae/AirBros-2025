@@ -547,7 +547,7 @@ const flightData = [
 ];
 
 // State Management
-let currentState = 'landing';
+let currentState = 'leaderboard';
 let searchedPerson = null;
 
 // DOM Elements
@@ -576,26 +576,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize search button state
     updateSearchButtonState();
     
-    // Check if we should show leaderboard directly (from map page)
-    if (window.location.hash === '#leaderboard') {
-        // Check if a person was specified in the URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const personParam = urlParams.get('person');
-        
-        if (personParam) {
-            // Find and highlight the specified person
-            searchedPerson = flightData.find(
-                person => person.name.toUpperCase() === personParam.toUpperCase()
-            );
-        } else {
-            searchedPerson = null; // No specific person selected
-        }
-        
-        showLeaderboard();
+    // Always show leaderboard on initial load
+    // Check if a person was specified in the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const personParam = urlParams.get('person');
+    
+    if (personParam) {
+        // Find and highlight the specified person
+        searchedPerson = flightData.find(
+            person => person.name.toUpperCase() === personParam.toUpperCase()
+        );
     } else {
-        // Focus input on load
-        nameInput.focus();
+        searchedPerson = null; // No specific person selected
     }
+    
+    // Show leaderboard immediately
+    showLeaderboard();
     
     // Play beep sound on initialization (optional)
     // playBeep(200, 0.1);
