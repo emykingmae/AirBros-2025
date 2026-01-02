@@ -613,7 +613,7 @@ function initializeEventListeners() {
     // Add click handler to page header (only on index.html, not map.html)
     const pageHeader = document.getElementById('pageHeader');
     if (pageHeader && !document.body.classList.contains('map-page')) {
-        pageHeader.addEventListener('click', resetToLanding);
+        pageHeader.addEventListener('click', resetLeaderboard);
     }
     
     // Keyboard shortcuts
@@ -1092,6 +1092,19 @@ function resetToLanding() {
     
     // Update search button state
     updateSearchButtonState();
+    
+    // Play beep
+    playBeep(150, 0.1);
+}
+
+// Reset Leaderboard (clear selected person, keep leaderboard visible)
+function resetLeaderboard() {
+    searchedPerson = null;
+    profileCardContainer.innerHTML = '';
+    renderLeaderboard();
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     
     // Play beep
     playBeep(150, 0.1);
