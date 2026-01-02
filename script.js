@@ -857,6 +857,12 @@ function animateProgress(from, to, callback) {
     animate();
 }
 
+// Omni Map State
+let omniMap = null;
+let omniMapRouteLines = [];
+let omniMapAirportMarkers = [];
+let currentlyHoveredPerson = null;
+
 // Leaderboard Display
 function showLeaderboard() {
     currentState = 'leaderboard';
@@ -870,6 +876,11 @@ function showLeaderboard() {
     
     if (searchedPerson) {
         renderProfileCard(searchedPerson);
+    }
+    
+    // Initialize omni map on desktop
+    if (window.innerWidth >= 1024) {
+        initializeOmniMap();
     }
     
     // Scroll to top when showing leaderboard
@@ -904,6 +915,7 @@ function createTableRow(person, rank) {
     const row = document.createElement('div');
     row.className = 'table-row';
     row.style.opacity = '0';
+    row.dataset.personName = person.name;
     
     const isPiotr = person.id === 8;
     if (isPiotr) {
@@ -920,6 +932,16 @@ function createTableRow(person, rank) {
         row.style.cursor = 'pointer';
         row.addEventListener('click', () => {
             navigateToUser(person.name);
+        });
+    }
+    
+    // Add hover handlers for omni map (only on desktop)
+    if (window.innerWidth >= 1024) {
+        row.addEventListener('mouseenter', () => {
+            highlightPersonOnOmniMap(person.name);
+        });
+        row.addEventListener('mouseleave', () => {
+            resetOmniMapHighlight();
         });
     }
     
@@ -1090,6 +1112,15 @@ function resetToLanding() {
     profileCardContainer.innerHTML = '';
     tableBody.innerHTML = '';
     
+    // Clean up omni map
+    if (omniMap) {
+        omniMap.remove();
+        omniMap = null;
+        omniMapRouteLines = [];
+        omniMapAirportMarkers = [];
+        currentlyHoveredPerson = null;
+    }
+    
     // Update search button state
     updateSearchButtonState();
     
@@ -1102,6 +1133,11 @@ function resetLeaderboard() {
     searchedPerson = null;
     profileCardContainer.innerHTML = '';
     renderLeaderboard();
+    
+    // Reset omni map highlight
+    if (omniMap) {
+        resetOmniMapHighlight();
+    }
     
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1213,6 +1249,435 @@ function handleMapButtonClick(personName, personId) {
         window.location.href = `map.html?person=${encodeURIComponent(personName)}`;
     }
 }
+
+// Omni Map Functions
+function initializeOmniMap() {
+    const omniMapContainer = document.getElementById('omniMap');
+    if (!omniMapContainer || typeof L === 'undefined') {
+        return;
+    }
+    
+    // Clean up existing map if it exists
+    if (omniMap) {
+        omniMap.remove();
+        omniMap = null;
+        omniMapRouteLines = [];
+        omniMapAirportMarkers = [];
+    }
+    
+    // Create map with dark styling - enable interactions for scrolling
+    // Remove maxBounds and enable worldCopyJump for seamless world scrolling
+    omniMap = L.map('omniMap', {
+        center: [0, 0],
+        zoom: 2,
+        zoomControl: true,
+        attributionControl: false,
+        zoomSnap: 0.5,
+        minZoom: 2,
+        maxZoom: 8,
+        worldCopyJump: true,
+        dragging: true,
+        touchZoom: true,
+        doubleClickZoom: true,
+        scrollWheelZoom: true,
+        boxZoom: false,
+        keyboard: false,
+        tap: true
+    });
+    
+    // Use CartoDB Dark Matter tiles
+    const darkTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '',
+        subdomains: 'abcd',
+        maxZoom: 8,
+        tileSize: 256,
+        noWrap: false
+    });
+    
+    darkTiles.addTo(omniMap);
+    
+    // Set dark background
+    const mapContainer = omniMap.getContainer();
+    if (mapContainer) {
+        mapContainer.style.backgroundColor = '#000000';
+    }
+    
+    // Draw all routes
+    drawAllOmniMapRoutes();
+    
+    // Set to world view (already set in map initialization, but ensure it's correct)
+    setTimeout(() => {
+        if (omniMap) {
+            omniMap.setView([0, 0], 2, { animate: false });
+            omniMap.invalidateSize();
+        }
+    }, 100);
+}
+
+function drawAllOmniMapRoutes() {
+    if (!omniMap) return;
+    
+    // Collect all airports
+    const allAirports = new Map();
+    
+    // Draw routes for each person
+    flightData.forEach(person => {
+        const personRoutes = flightRoutes[person.name] || [];
+        personRoutes.forEach(route => {
+            const fromCode = route.from.code;
+            const toCode = route.to.code;
+            
+            if (!allAirports.has(fromCode)) {
+                allAirports.set(fromCode, route.from);
+            }
+            if (!allAirports.has(toCode)) {
+                allAirports.set(toCode, route.to);
+            }
+            
+            // Draw route with person name attached
+            drawOmniMapRoute(route, person.name);
+        });
+    });
+    
+    // Add airport markers
+    allAirports.forEach((airport) => {
+        addOmniMapAirportMarker(airport);
+    });
+}
+
+function drawOmniMapRoute(route, personName) {
+    if (!omniMap) return;
+    
+    const fromLat = route.from.lat;
+    const fromLon = route.from.lon;
+    const toLat = route.to.lat;
+    const toLon = route.to.lon;
+    
+    // Create curved path using arc (reuse logic from map.js)
+    const arcSegments = createOmniMapArc(fromLat, fromLon, toLat, toLon);
+    
+    arcSegments.forEach((segmentPoints) => {
+        const polyline = L.polyline([], {
+            color: '#00FF00',
+            weight: 2,
+            opacity: 0.7,
+            interactive: false,
+            className: 'omni-flight-route-line'
+        });
+        
+        polyline.addTo(omniMap);
+        polyline.setLatLngs(segmentPoints);
+        
+        // Store person name and route data
+        polyline.personName = personName;
+        polyline.route = route;
+        
+        omniMapRouteLines.push(polyline);
+    });
+}
+
+function createOmniMapArc(lat1, lon1, lat2, lon2) {
+    const points = [];
+    const steps = 50;
+    
+    // Calculate distance
+    const distance = calculateOmniMapDistance(lat1, lon1, lat2, lon2);
+    const arcHeightKm = distance * 0.1;
+    const arcHeightDegrees = arcHeightKm / 111;
+    
+    // Check if trans-Pacific
+    const isTransPacific = (
+        (lon1 < -50 && lon2 > 100) || (lon1 > 100 && lon2 < -50)
+    );
+    
+    let lon1Adjusted = lon1;
+    let lon2Adjusted = lon2;
+    let usePacificRoute = false;
+    
+    if (isTransPacific) {
+        usePacificRoute = true;
+        if (lon1 < 0 && lon2 > 0) {
+            lon2Adjusted = lon2 - 360;
+        } else if (lon1 > 0 && lon2 < 0) {
+            lon1Adjusted = lon1 - 360;
+        }
+    }
+    
+    const midLat = (lat1 + lat2) / 2;
+    const midLon = usePacificRoute ? (lon1Adjusted + lon2Adjusted) / 2 : (lon1 + lon2) / 2;
+    const bearing = calculateOmniMapBearing(lat1, lon1Adjusted, lat2, lon2Adjusted);
+    const bearingRad = bearing * Math.PI / 180;
+    
+    const latDiff = Math.abs(lat2 - lat1);
+    const lonDiff = Math.abs(lon2Adjusted - lon1Adjusted);
+    const isPrimarilyEastWest = lonDiff > latDiff * 1.5;
+    const isPrimarilyNorthSouth = latDiff > lonDiff * 1.5;
+    
+    let offsetLat = 0;
+    let offsetLon = 0;
+    
+    if (isPrimarilyEastWest) {
+        const avgLat = (lat1 + lat2) / 2;
+        const arcDirection = avgLat >= 0 ? 1 : -1;
+        offsetLat = arcHeightDegrees * arcDirection;
+        offsetLon = 0;
+    } else if (isPrimarilyNorthSouth) {
+        const perpAngle = bearingRad + Math.PI / 2;
+        const latScale = Math.cos((midLat * Math.PI) / 180);
+        offsetLat = 0;
+        offsetLon = Math.sin(perpAngle) * arcHeightDegrees / Math.max(latScale, 0.1);
+    } else {
+        const perpAngle = bearingRad + Math.PI / 2;
+        const latScale = Math.cos((midLat * Math.PI) / 180);
+        const avgLat = (lat1 + lat2) / 2;
+        const arcDirection = avgLat >= 0 ? 1 : -1;
+        offsetLat = arcHeightDegrees * 0.7 * arcDirection;
+        offsetLon = Math.sin(perpAngle) * arcHeightDegrees * 0.3 / Math.max(latScale, 0.1);
+    }
+    
+    for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        let lat = lat1 + (lat2 - lat1) * t;
+        let lon;
+        
+        if (usePacificRoute) {
+            lon = lon1Adjusted + (lon2Adjusted - lon1Adjusted) * t;
+        } else {
+            lon = lon1 + (lon2 - lon1) * t;
+        }
+        
+        const curveFactor = Math.sin(t * Math.PI);
+        lat += offsetLat * curveFactor;
+        lon += offsetLon * curveFactor;
+        
+        while (lon < -180) lon += 360;
+        while (lon > 180) lon -= 360;
+        
+        points.push([lat, lon]);
+    }
+    
+    // Split points at date line
+    return splitOmniMapPointsAtDateLine(points);
+}
+
+function splitOmniMapPointsAtDateLine(points) {
+    if (points.length === 0) return [points];
+    
+    const segments = [];
+    let currentSegment = [points[0]];
+    
+    for (let i = 1; i < points.length; i++) {
+        const prevLon = points[i - 1][1];
+        const currLon = points[i][1];
+        const lonDiff = Math.abs(currLon - prevLon);
+        const crossesDateLine = lonDiff > 180;
+        
+        if (crossesDateLine) {
+            if (currentSegment.length > 0) {
+                segments.push(currentSegment);
+            }
+            currentSegment = [points[i]];
+        } else {
+            currentSegment.push(points[i]);
+        }
+    }
+    
+    if (currentSegment.length > 0) {
+        segments.push(currentSegment);
+    }
+    
+    return segments.length > 0 ? segments : [points];
+}
+
+function calculateOmniMapBearing(lat1, lon1, lat2, lon2) {
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const lat1Rad = lat1 * Math.PI / 180;
+    const lat2Rad = lat2 * Math.PI / 180;
+    
+    const y = Math.sin(dLon) * Math.cos(lat2Rad);
+    const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - 
+              Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLon);
+    
+    const bearing = Math.atan2(y, x);
+    return (bearing * 180 / Math.PI + 360) % 360;
+}
+
+function calculateOmniMapDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+function addOmniMapAirportMarker(airport) {
+    if (!omniMap) return;
+    
+    const marker = L.circleMarker([airport.lat, airport.lon], {
+        radius: 4,
+        fillColor: '#00FF00',
+        color: '#00FF00',
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.6,
+        interactive: false
+    }).addTo(omniMap);
+    
+    const label = L.marker([airport.lat + 0.3, airport.lon + 0.3], {
+        icon: L.divIcon({
+            className: 'airport-label',
+            html: `<div class="airport-code-label" style="color: #00FF00; font-size: 12px; text-shadow: 0 0 5px rgba(0, 255, 0, 0.8);">${airport.code}</div>`,
+            iconSize: [40, 15],
+            iconAnchor: [20, 7]
+        }),
+        interactive: false,
+        zIndexOffset: 1000
+    }).addTo(omniMap);
+    
+    marker.airportCode = airport.code;
+    label.airportCode = airport.code;
+    marker.labelElement = label;
+    label.markerElement = marker;
+    
+    omniMapAirportMarkers.push(marker, label);
+}
+
+// Removed fitOmniMapToRoutes - map now shows world view by default and is scrollable
+
+function highlightPersonOnOmniMap(personName) {
+    if (!omniMap || currentlyHoveredPerson === personName) return;
+    
+    currentlyHoveredPerson = personName;
+    
+    // Highlight this person's routes, dim others
+    omniMapRouteLines.forEach(line => {
+        if (line.personName === personName) {
+            line.setStyle({
+                color: '#66FF66',
+                weight: 4,
+                opacity: 1.0
+            });
+            line.bringToFront();
+        } else {
+            line.setStyle({
+                color: '#001100',
+                weight: 1,
+                opacity: 0.15
+            });
+        }
+    });
+    
+    // Highlight airports used by this person
+    const personRoutes = flightRoutes[personName] || [];
+    const personAirportCodes = new Set();
+    personRoutes.forEach(route => {
+        personAirportCodes.add(route.from.code);
+        personAirportCodes.add(route.to.code);
+    });
+    
+    omniMapAirportMarkers.forEach(marker => {
+        if (marker.airportCode && personAirportCodes.has(marker.airportCode)) {
+            if (marker.setStyle) {
+                marker.setStyle({
+                    fillColor: '#66FF66',
+                    color: '#66FF66',
+                    fillOpacity: 0.9,
+                    opacity: 1.0
+                });
+            }
+            if (marker.labelElement && marker.labelElement.getElement) {
+                const labelEl = marker.labelElement.getElement();
+                if (labelEl) {
+                    labelEl.style.opacity = '1';
+                    const codeLabel = labelEl.querySelector('.airport-code-label');
+                    if (codeLabel) {
+                        codeLabel.style.color = '#66FF66';
+                        codeLabel.style.textShadow = '0 0 15px rgba(102, 255, 102, 0.9)';
+                    }
+                }
+            }
+        } else {
+            if (marker.setStyle) {
+                marker.setStyle({
+                    fillColor: '#001100',
+                    color: '#001100',
+                    fillOpacity: 0.2,
+                    opacity: 0.2
+                });
+            }
+            if (marker.labelElement && marker.labelElement.getElement) {
+                const labelEl = marker.labelElement.getElement();
+                if (labelEl) {
+                    labelEl.style.opacity = '0.2';
+                    const codeLabel = labelEl.querySelector('.airport-code-label');
+                    if (codeLabel) {
+                        codeLabel.style.color = '#001100';
+                        codeLabel.style.textShadow = 'none';
+                    }
+                }
+            }
+        }
+    });
+}
+
+function resetOmniMapHighlight() {
+    if (!omniMap) return;
+    
+    currentlyHoveredPerson = null;
+    
+    // Reset all routes
+    omniMapRouteLines.forEach(line => {
+        line.setStyle({
+            color: '#00FF00',
+            weight: 2,
+            opacity: 0.7
+        });
+    });
+    
+    // Reset all airports
+    omniMapAirportMarkers.forEach(marker => {
+        if (marker.setStyle) {
+            marker.setStyle({
+                fillColor: '#00FF00',
+                color: '#00FF00',
+                fillOpacity: 0.6,
+                opacity: 1.0
+            });
+        }
+        if (marker.labelElement && marker.labelElement.getElement) {
+            const labelEl = marker.labelElement.getElement();
+            if (labelEl) {
+                labelEl.style.opacity = '1';
+                const codeLabel = labelEl.querySelector('.airport-code-label');
+                if (codeLabel) {
+                    codeLabel.style.color = '#00FF00';
+                    codeLabel.style.textShadow = '0 0 5px rgba(0, 255, 0, 0.8)';
+                }
+            }
+        }
+    });
+}
+
+// Handle window resize to reinitialize omni map if needed
+window.addEventListener('resize', () => {
+    if (currentState === 'leaderboard') {
+        if (window.innerWidth >= 1024 && !omniMap) {
+            initializeOmniMap();
+        } else if (window.innerWidth < 1024 && omniMap) {
+            if (omniMap) {
+                omniMap.remove();
+                omniMap = null;
+                omniMapRouteLines = [];
+                omniMapAirportMarkers = [];
+            }
+        } else if (omniMap) {
+            omniMap.invalidateSize();
+        }
+    }
+});
 
 // Make handleMapButtonClick globally available
 window.handleMapButtonClick = handleMapButtonClick;
